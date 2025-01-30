@@ -3,11 +3,31 @@ use std::sync::LazyLock;
 use chrono::prelude::*;
 use regex::Regex;
 
-static RE_TIME_SPAN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(
-        r#"^(?:(?<year>\d{4})-)?(?<month>\d{1,2})-(?<day>\d{1,2})(?:T(?<hour>\d{1,2}):(?<minute>\d{2})(?::(?<sec>\d{2}))?(?<offset>Z|(?<noffset>[+-]\d{1,2}:\d{2}))?)?$"#,
-    ).expect("hard-coded regex should compile")
-});
+const PATTERN_TIME_SPAN: &str = r#"(?x)
+    (?:
+        (?<year> \d{4} )
+        -
+    )?
+    (?<month> \d{1,2} )
+    -
+    (?<day> \d{1,2} )
+    (?:
+        T
+        (?<hour> \d{1,2} )
+        :
+        (?<minute> \d{2} )
+        (?:
+            :
+            (?<sec> \d{2} )
+        )?
+        (?<offset>
+            Z
+            |(?<noffset> [+-]\d{1,2}:\d{2} )
+        )?
+    )?
+$"#;
+static RE_TIME_SPAN: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(PATTERN_TIME_SPAN).expect("hard-coded regex should compile"));
 
 pub fn parse_lenient_date_time(input: &str) -> Option<DateTime<Utc>> {
     // match on the regex to get required fields
@@ -16,9 +36,10 @@ pub fn parse_lenient_date_time(input: &str) -> Option<DateTime<Utc>> {
     };
 
     // parse components from matched fields
-    let year: i32 = captures.name("year").map_or_else(|| Utc::now().year(), |m| {
-        m.as_str().parse().expect("regex guarantees digits")
-    });
+    let year: i32 = captures.name("year").map_or_else(
+        || Utc::now().year(),
+        |m| m.as_str().parse().expect("regex guarantees digits"),
+    );
     let month: u32 = captures
         .name("month")
         .expect("regex guarantees month")
@@ -120,24 +141,37 @@ mod tests {
 
         // Test with date only
         let input = "2023-10-05";
-        let expected = Local.with_ymd_and_hms(2023, 10, 5, 0, 0, 0).earliest().unwrap().with_timezone(&Utc);
+        let expected = Local
+            .with_ymd_and_hms(2023, 10, 5, 0, 0, 0)
+            .earliest()
+            .unwrap()
+            .with_timezone(&Utc);
         assert_eq!(parse_lenient_date_time(input), Some(expected));
 
         // Test with date and time without offset
         let input = "2023-10-05T14:30:00";
-        let expected = Local.with_ymd_and_hms(2023, 10, 5, 14, 30, 0).unwrap().with_timezone(&Utc);
+        let expected = Local
+            .with_ymd_and_hms(2023, 10, 5, 14, 30, 0)
+            .unwrap()
+            .with_timezone(&Utc);
         assert_eq!(parse_lenient_date_time(input), Some(expected));
 
         // Test with date and time without seconds
         let input = "2023-10-05T14:30";
-        let expected = Local.with_ymd_and_hms(2023, 10, 5, 14, 30, 0).unwrap().with_timezone(&Utc);
+        let expected = Local
+            .with_ymd_and_hms(2023, 10, 5, 14, 30, 0)
+            .unwrap()
+            .with_timezone(&Utc);
         assert_eq!(parse_lenient_date_time(input), Some(expected));
 
         // Test with partial date (month and day only)
         let input = "10-05";
         let now = Utc::now(); // lol don't test this on new year's eve
-        let expected = Local.with_ymd_and_hms(now.year(), 10, 5, 0, 0, 0).earliest().unwrap().with_timezone(&Utc);
+        let expected = Local
+            .with_ymd_and_hms(now.year(), 10, 5, 0, 0, 0)
+            .earliest()
+            .unwrap()
+            .with_timezone(&Utc);
         assert_eq!(parse_lenient_date_time(input), Some(expected));
     }
 }
-

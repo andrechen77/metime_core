@@ -67,7 +67,10 @@ pub trait Repository {
     fn add_event_instance(
         &mut self,
         instance: EventInstance,
-    ) -> (Self::EventInstanceId, impl DerefMut<Target = EventInstance> + 'static);
+    ) -> (
+        Self::EventInstanceId,
+        impl DerefMut<Target = EventInstance> + 'static,
+    );
 
     /// Get the data of an event body given its ID.
     #[must_use]
@@ -82,7 +85,10 @@ pub trait Repository {
     fn add_event_body(
         &mut self,
         body: EventBody,
-    ) -> (Self::EventBodyId, impl DerefMut<Target = EventBody> + 'static);
+    ) -> (
+        Self::EventBodyId,
+        impl DerefMut<Target = EventBody> + 'static,
+    );
 }
 
 #[derive(Default)]
@@ -159,7 +165,10 @@ impl Repository for MemoryRepo {
     fn add_event_instance(
         &mut self,
         instance: EventInstance,
-    ) -> (Self::EventInstanceId, impl DerefMut<Target = EventInstance> + 'static) {
+    ) -> (
+        Self::EventInstanceId,
+        impl DerefMut<Target = EventInstance> + 'static,
+    ) {
         let id = Uuid::new_v4();
 
         // construct the entry as empty; the returned reference will fill in the
@@ -186,7 +195,10 @@ impl Repository for MemoryRepo {
     fn add_event_body(
         &mut self,
         body: EventBody,
-    ) -> (Self::EventBodyId, impl DerefMut<Target = EventBody> + 'static) {
+    ) -> (
+        Self::EventBodyId,
+        impl DerefMut<Target = EventBody> + 'static,
+    ) {
         let id = Uuid::new_v4();
 
         // construct the entry as empty; the returned reference will fill in the
