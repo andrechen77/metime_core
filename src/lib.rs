@@ -85,9 +85,34 @@ pub trait Repository {
     ) -> (Self::EventBodyId, impl DerefMut<Target = EventBody> + 'static);
 }
 
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct MemoryRepo {
     data: HashMap<Uuid, Arc<Mutex<Option<RepoEntry>>>>,
+}
+
+impl std::fmt::Debug for MemoryRepo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut map = f.debug_map();
+        for (id, entry) in &self.data {
+            use std::sync::TryLockError;
+            match entry.try_lock() {
+                Ok(entry) => {
+                    if let Some(repo_entry) = entry.as_ref() {
+                        map.entry(&id, repo_entry);
+                    } else {
+                        map.entry(&id, &"<retrieved elsewhere>");
+                    }
+                }
+                Err(TryLockError::WouldBlock) => {
+                    map.entry(&id, &"<locked>");
+                }
+                Err(TryLockError::Poisoned(poison_error)) => {
+                    map.entry(&id, &&**poison_error.get_ref());
+                }
+            }
+        }
+        map.finish()
+    }
 }
 
 impl MemoryRepo {
