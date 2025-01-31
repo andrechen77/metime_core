@@ -3,7 +3,7 @@ use clap_repl::{
     reedline::{DefaultPrompt, DefaultPromptSegment},
     ClapEditor,
 };
-use metime_core::{EventBody, EventInstance, MemoryRepo, Repository, TimeSpan};
+use metime_core::{EventBody, EventInstance, MemoryRepo, Repository};
 
 mod parse;
 
@@ -45,12 +45,12 @@ fn main() {
                 title,
                 desc,
             } => {
-                let Some(date_time) = parse::parse_lenient_date_time(&time_span) else {
+                let Some(time_span) = parse::parse_lenient_time_span(&time_span) else {
                     println!("Failed to parse date/time: {}", time_span);
                     return;
                 };
 
-                println!("Creating event at: {}", date_time.format("%c"));
+                println!("Creating event at: {}", time_span);
 
                 let event_body = EventBody {
                     summary: title,
@@ -59,7 +59,7 @@ fn main() {
                 let (body_id, _) = repo.add_event_body(event_body);
 
                 let event_instance = EventInstance {
-                    time_span: TimeSpan::Instant(date_time),
+                    time_span,
                     body: body_id,
                 };
                 let (_, _) = repo.add_event_instance(event_instance);

@@ -6,7 +6,7 @@ use std::{
 
 use chrono::{prelude::*, TimeDelta};
 use derive_more::{
-    derive::{From, TryInto},
+    derive::{Display, From, TryInto},
     TryIntoError,
 };
 use uuid::Uuid;
@@ -17,9 +17,11 @@ pub struct EventInstance {
     pub body: Uuid,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Display, PartialEq, Eq)]
 pub enum TimeSpan {
+    #[display("[{}]", _0.format("%c"))]
     Instant(DateTime<Utc>),
+    #[display("[{} -- {}]", start.format("%c"), duration)]
     Interval {
         start: DateTime<Utc>,
         duration: TimeDelta,
