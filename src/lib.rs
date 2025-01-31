@@ -21,7 +21,7 @@ pub struct EventInstance {
 pub enum TimeSpan {
     #[display("[{}]", _0.format("%c"))]
     Instant(DateTime<Utc>),
-    #[display("[{} -- {}]", start.format("%c"), duration)]
+    #[display("[{} -- {}m]", start.format("%c"), duration.num_minutes())]
     Interval {
         start: DateTime<Utc>,
         duration: TimeDelta,
