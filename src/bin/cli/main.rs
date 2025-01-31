@@ -3,7 +3,7 @@ use clap_repl::{
     reedline::{DefaultPrompt, DefaultPromptSegment},
     ClapEditor,
 };
-use metime_core::{EventBody, EventInstance, MemoryRepo, Repository};
+use metime_core::MemoryRepo;
 
 mod parse;
 
@@ -52,17 +52,7 @@ fn main() {
 
                 println!("Creating event at: {}", time_span);
 
-                let event_body = EventBody {
-                    summary: title,
-                    description: desc,
-                };
-                let (body_id, _) = repo.add_event_body(event_body);
-
-                let event_instance = EventInstance {
-                    time_span,
-                    body: body_id,
-                };
-                let (_, _) = repo.add_event_instance(event_instance);
+                let _ = metime_core::add_event(&mut repo, time_span, title, desc);
             }
             Command::Show => {
                 println!("{:#?}", &repo);

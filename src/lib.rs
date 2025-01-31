@@ -1,3 +1,5 @@
+#![feature(precise_capturing_in_traits)]
+
 use std::{
     collections::HashMap,
     ops::{Deref, DerefMut},
@@ -12,9 +14,9 @@ use derive_more::{
 use uuid::Uuid;
 
 #[derive(Debug)]
-pub struct EventInstance {
+pub struct EventInstance<R: Repository + ?Sized> {
     pub time_span: TimeSpan,
-    pub body: Uuid,
+    pub body: R::EventBodyId,
 }
 
 #[derive(Debug, Display, PartialEq, Eq)]
@@ -60,24 +62,24 @@ pub trait Repository {
     fn get_event_instance(
         &self,
         id: Self::EventInstanceId,
-    ) -> Result<impl DerefMut<Target = EventInstance> + 'static, RepoRetrievalError>;
+    ) -> Result<impl DerefMut<Target = EventInstance<Self>> + 'static + use<Self>, RepoRetrievalError>;
 
     /// Adds a new event instance to the repository. Returns the ID of the event
     /// instance and a reference to the data.
     #[must_use]
     fn add_event_instance(
         &mut self,
-        instance: EventInstance,
+        instance: EventInstance<Self>,
     ) -> (
         Self::EventInstanceId,
-        impl DerefMut<Target = EventInstance> + 'static,
+        impl DerefMut<Target = EventInstance<Self>> + 'static + use<Self>,
     );
 
     /// Get the data of an event body given its ID.
     fn get_event_body(
         &self,
         id: Self::EventBodyId,
-    ) -> Result<impl DerefMut<Target = EventBody> + 'static, RepoRetrievalError>;
+    ) -> Result<impl DerefMut<Target = EventBody> + 'static + use<Self>, RepoRetrievalError>;
 
     /// Adds a new event body to the repository. Returns the ID of the event
     /// body and a reference to the data.
@@ -87,8 +89,33 @@ pub trait Repository {
         body: EventBody,
     ) -> (
         Self::EventBodyId,
-        impl DerefMut<Target = EventBody> + 'static,
+        impl DerefMut<Target = EventBody> + 'static + use<Self>,
     );
+}
+
+pub fn add_event<R: Repository>(
+    repo: &mut R,
+    time_span: TimeSpan,
+    title: String,
+    desc: String,
+) -> (
+    R::EventInstanceId,
+    R::EventBodyId,
+    impl DerefMut<Target = EventInstance<R>> + 'static,
+    impl DerefMut<Target = EventBody> + 'static,
+) {
+    let event_body = EventBody {
+        summary: title,
+        description: desc,
+    };
+    let (body_id, body) = repo.add_event_body(event_body);
+
+    let event_instance = EventInstance {
+        time_span,
+        body: body_id,
+    };
+    let (instance_id, instance) = repo.add_event_instance(event_instance);
+    (instance_id, body_id, instance, body)
 }
 
 #[derive(Default)]
@@ -158,16 +185,17 @@ impl Repository for MemoryRepo {
     fn get_event_instance(
         &self,
         id: Self::EventInstanceId,
-    ) -> Result<impl DerefMut<Target = EventInstance> + 'static, RepoRetrievalError> {
+    ) -> Result<impl DerefMut<Target = EventInstance<Self>> + 'static + use<>, RepoRetrievalError>
+    {
         self.get_item(id)
     }
 
     fn add_event_instance(
         &mut self,
-        instance: EventInstance,
+        instance: EventInstance<Self>,
     ) -> (
         Self::EventInstanceId,
-        impl DerefMut<Target = EventInstance> + 'static,
+        impl DerefMut<Target = EventInstance<Self>> + 'static + use<>,
     ) {
         let id = Uuid::new_v4();
 
@@ -188,7 +216,7 @@ impl Repository for MemoryRepo {
     fn get_event_body(
         &self,
         id: Self::EventBodyId,
-    ) -> Result<impl DerefMut<Target = EventBody> + 'static, RepoRetrievalError> {
+    ) -> Result<impl DerefMut<Target = EventBody> + 'static + use<>, RepoRetrievalError> {
         self.get_item(id)
     }
 
@@ -197,7 +225,7 @@ impl Repository for MemoryRepo {
         body: EventBody,
     ) -> (
         Self::EventBodyId,
-        impl DerefMut<Target = EventBody> + 'static,
+        impl DerefMut<Target = EventBody> + 'static + use<>,
     ) {
         let id = Uuid::new_v4();
 
@@ -218,7 +246,7 @@ impl Repository for MemoryRepo {
 
 #[derive(Debug, From, TryInto)]
 enum RepoEntry {
-    EventInstance(Box<EventInstance>),
+    EventInstance(Box<EventInstance<MemoryRepo>>),
     EventBody(Box<EventBody>),
 }
 
