@@ -54,9 +54,7 @@ enum LexedOffset {
 
 fn lex_lenient_time_span(input: &str) -> Option<LexedTimeSpan> {
     // match on the regex to get required fields
-    let Some(captures) = RE_TIME_SPAN.captures(&input) else {
-        return None;
-    };
+    let captures = RE_TIME_SPAN.captures(input)?;
 
     // lex components from matched fields
     let year: Option<i32> = captures
@@ -129,9 +127,7 @@ fn lex_lenient_time_span(input: &str) -> Option<LexedTimeSpan> {
 
 pub fn parse_lenient_time_span(input: &str) -> Option<TimeSpan> {
     // lex the input
-    let Some(lexed) = lex_lenient_time_span(input) else {
-        return None;
-    };
+    let lexed = lex_lenient_time_span(input)?;
     let LexedTimeSpan {
         year, month, day, ..
     } = lexed;

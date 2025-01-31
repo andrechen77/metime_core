@@ -57,7 +57,6 @@ pub trait Repository {
     type EventBodyId: Copy;
 
     /// Get the data of an event instance given its ID.
-    #[must_use]
     fn get_event_instance(
         &self,
         id: Self::EventInstanceId,
@@ -75,7 +74,6 @@ pub trait Repository {
     );
 
     /// Get the data of an event body given its ID.
-    #[must_use]
     fn get_event_body(
         &self,
         id: Self::EventBodyId,
