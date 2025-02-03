@@ -3,16 +3,13 @@ use std::collections::BTreeMap;
 use chrono::{prelude::*, TimeDelta};
 use derive_more::derive::Display;
 
-use crate::repository::Repository;
-
 /// Holds IDs to all event instances, allowing lookup by time.
-pub struct Timeline<R: Repository + ?Sized> {
-    pub events: BTreeMap<DateTime<Utc>, R::EventInstanceId>,
+#[derive(Debug)]
+pub struct Timeline<EventInstanceId> {
+    pub events: BTreeMap<DateTime<Utc>, EventInstanceId>,
 }
 
-// we manually implement Default because the derive macro is not smart enough to
-// apply the correct bounds, instead flatly refusing to implement Default
-impl<R: Repository + ?Sized> Default for Timeline<R> {
+impl<EventInstanceId> Default for Timeline<EventInstanceId> {
     fn default() -> Self {
         Self {
             events: BTreeMap::new(),
@@ -20,31 +17,17 @@ impl<R: Repository + ?Sized> Default for Timeline<R> {
     }
 }
 
-impl<R: Repository + ?Sized> Timeline<R> {
+impl<EventInstanceId> Timeline<EventInstanceId> {
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-// we manually implement Debug because the derive macro is not smart enough to
-// apply the correct bounds, instead flatly refusing to implement Debug
-impl<R: Repository + ?Sized> std::fmt::Debug for Timeline<R>
-where
-    R: std::fmt::Debug,
-    R::EventInstanceId: std::fmt::Debug,
-    R::EventBodyId: std::fmt::Debug,
-{
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("Timeline ")?;
-        f.debug_map().entries(self.events.iter()).finish()
-    }
-}
-
 /// A single event instance.
 #[derive(Debug)]
-pub struct EventInstance<R: Repository + ?Sized> {
+pub struct EventInstance<EventBodyId> {
     pub time_span: TimeSpan,
-    pub body: R::EventBodyId,
+    pub body: EventBodyId,
 }
 
 /// A set of continuous points in time describing the times at which an event is
@@ -68,6 +51,16 @@ impl TimeSpan {
         match self {
             TimeSpan::Instant(time) => *time,
             TimeSpan::Interval { start, .. } => *start,
+        }
+    }
+
+    /// Returns the latest point of the time span. Since time spans are
+    /// technically half-open intervals, this point is not actually included
+    /// in the span.
+    pub fn latest(&self) -> DateTime<Utc> {
+        match self {
+            TimeSpan::Instant(time) => *time,
+            TimeSpan::Interval { start, duration } => *start + *duration,
         }
     }
 }

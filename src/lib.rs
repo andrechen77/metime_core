@@ -16,7 +16,7 @@ pub fn add_event<R: Repository>(
 ) -> (
     R::EventInstanceId,
     R::EventBodyId,
-    impl DerefMut<Target = EventInstance<R>> + 'static,
+    impl DerefMut<Target = EventInstance<R::EventBodyId>> + 'static,
     impl DerefMut<Target = EventBody> + 'static,
 ) {
     let event_body = EventBody {

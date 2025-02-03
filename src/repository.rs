@@ -9,7 +9,9 @@ pub mod memory_repo;
 /// Trait for interacting with some backing repository for retrieving, caching,
 /// and modifying application data in-memory.
 pub trait Repository {
-    fn get_timeline(&self) -> Option<impl DerefMut<Target = Timeline<Self>> + 'static + use<Self>>;
+    fn get_timeline(
+        &self,
+    ) -> Option<impl DerefMut<Target = Timeline<Self::EventInstanceId>> + 'static + use<Self>>;
 
     type EventInstanceId: Copy;
 
@@ -17,17 +19,20 @@ pub trait Repository {
     fn get_event_instance(
         &self,
         id: Self::EventInstanceId,
-    ) -> Result<impl DerefMut<Target = EventInstance<Self>> + 'static + use<Self>, RepoRetrievalError>;
+    ) -> Result<
+        impl DerefMut<Target = EventInstance<Self::EventBodyId>> + 'static + use<Self>,
+        RepoRetrievalError,
+    >;
 
     /// Adds a new event instance to the repository. Returns the ID of the event
     /// instance and a reference to the data.
     #[must_use]
     fn add_event_instance(
         &self,
-        instance: EventInstance<Self>,
+        instance: EventInstance<Self::EventBodyId>,
     ) -> (
         Self::EventInstanceId,
-        impl DerefMut<Target = EventInstance<Self>> + 'static + use<Self>,
+        impl DerefMut<Target = EventInstance<Self::EventBodyId>> + 'static + use<Self>,
     );
 
     type EventBodyId: Copy;

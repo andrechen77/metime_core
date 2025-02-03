@@ -17,7 +17,7 @@ use super::{RepoRetrievalError, Repository};
 
 #[derive(Default, Debug)]
 pub struct MemoryRepo {
-    timeline: SlotPtr<Box<Timeline<Self>>>,
+    timeline: SlotPtr<Box<Timeline<Uuid>>>,
     blobs: Mutex<HashMap<Uuid, SlotPtr<Blob>>>,
 }
 
@@ -44,7 +44,9 @@ impl MemoryRepo {
 }
 
 impl Repository for MemoryRepo {
-    fn get_timeline(&self) -> Option<impl DerefMut<Target = Timeline<Self>> + 'static + use<>> {
+    fn get_timeline(
+        &self,
+    ) -> Option<impl DerefMut<Target = Timeline<Self::EventInstanceId>> + 'static + use<>> {
         lend_item(self.timeline.clone(), Ok)
     }
 
@@ -53,17 +55,19 @@ impl Repository for MemoryRepo {
     fn get_event_instance(
         &self,
         id: Self::EventInstanceId,
-    ) -> Result<impl DerefMut<Target = EventInstance<Self>> + 'static + use<>, RepoRetrievalError>
-    {
+    ) -> Result<
+        impl DerefMut<Target = EventInstance<Self::EventBodyId>> + 'static + use<>,
+        RepoRetrievalError,
+    > {
         self.lend_from_blobs(id)
     }
 
     fn add_event_instance(
         &self,
-        instance: EventInstance<Self>,
+        instance: EventInstance<Self::EventBodyId>,
     ) -> (
         Self::EventInstanceId,
-        impl DerefMut<Target = EventInstance<Self>> + 'static + use<>,
+        impl DerefMut<Target = EventInstance<Self::EventBodyId>> + 'static + use<>,
     ) {
         let id = Uuid::new_v4();
 
@@ -180,7 +184,7 @@ where
 
 #[derive(Debug, From, TryInto)]
 enum Blob {
-    EventInstance(Box<EventInstance<MemoryRepo>>),
+    EventInstance(Box<EventInstance<Uuid>>),
     EventBody(Box<EventBody>),
 }
 
