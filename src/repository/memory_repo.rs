@@ -18,7 +18,7 @@ use super::{RepoRetrievalError, Repository};
 #[derive(Default, Debug)]
 pub struct MemoryRepo {
     timeline: SlotPtr<Box<Timeline<Self>>>,
-    blobs: HashMap<Uuid, SlotPtr<Blob>>,
+    blobs: Mutex<HashMap<Uuid, SlotPtr<Blob>>>,
 }
 
 impl MemoryRepo {
@@ -33,6 +33,8 @@ impl MemoryRepo {
     {
         let entry_ptr = self
             .blobs
+            .lock()
+            .unwrap()
             .get(&id)
             .ok_or(RepoRetrievalError::IdNotFound)?
             .clone();
@@ -57,7 +59,7 @@ impl Repository for MemoryRepo {
     }
 
     fn add_event_instance(
-        &mut self,
+        &self,
         instance: EventInstance<Self>,
     ) -> (
         Self::EventInstanceId,
@@ -68,7 +70,7 @@ impl Repository for MemoryRepo {
         // construct the entry as empty; the returned reference will fill in the
         // entry when it is dropped
         let entry = SlotPtr(Arc::new(Mutex::new(None)));
-        self.blobs.insert(id, entry.clone());
+        self.blobs.lock().unwrap().insert(id, entry.clone());
 
         (
             id,
@@ -89,7 +91,7 @@ impl Repository for MemoryRepo {
     }
 
     fn add_event_body(
-        &mut self,
+        &self,
         body: EventBody,
     ) -> (
         Self::EventBodyId,
@@ -100,7 +102,10 @@ impl Repository for MemoryRepo {
         // construct the entry as empty; the returned reference will fill in the
         // entry when it is dropped
         let entry = SlotPtr(Arc::new(Mutex::new(None)));
-        self.blobs.insert(id, SlotPtr::clone(&entry));
+        self.blobs
+            .lock()
+            .unwrap()
+            .insert(id, SlotPtr::clone(&entry));
 
         (
             id,

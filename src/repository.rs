@@ -23,7 +23,7 @@ pub trait Repository {
     /// instance and a reference to the data.
     #[must_use]
     fn add_event_instance(
-        &mut self,
+        &self,
         instance: EventInstance<Self>,
     ) -> (
         Self::EventInstanceId,
@@ -42,7 +42,7 @@ pub trait Repository {
     /// body and a reference to the data.
     #[must_use]
     fn add_event_body(
-        &mut self,
+        &self,
         body: EventBody,
     ) -> (
         Self::EventBodyId,
